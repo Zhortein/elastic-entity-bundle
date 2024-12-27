@@ -1,0 +1,13 @@
+includes:
+    - vendor/phpstan/phpstan-symfony/extension.neon
+
+parameters:
+    level: max
+    paths:
+        - src
+    scanFiles:
+        - src/Traits/ElasticEntityTrait.php
+    # Ignorer certaines erreurs fréquentes si besoin
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        - '#Trait Zhortein\\ElasticEntityBundle\\Traits\\ElasticEntityTrait is used zero times and is not analysed.#'

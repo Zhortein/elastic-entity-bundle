@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<container xmlns="http://symfony.com/schema/dic/services"
+           xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+           xsi:schemaLocation="http://symfony.com/schema/dic/services
+        https://symfony.com/schema/dic/services/services-1.0.xsd">
+    <services>
+        <defaults autowire="true" autoconfigure="true" />
+
+        <!-- Automatically load all classes in the namespace except exclusions -->
+        <prototype namespace="Zhortein\ElasticEntityBundle\" resource="../src/" exclude="../src/{DependencyInjection,Entity,Kernel.php}" />
+
+        <!-- Explicitly declare MetadataCollector as a service -->
+        <service id="Zhortein\ElasticEntityBundle\Metadata\MetadataCollector" public="true" />
+
+        <!-- Explicitly declare the ElasticEntityMetadataPass -->
+        <service id="Zhortein\ElasticEntityBundle\DependencyInjection\Compiler\ElasticEntityMetadataPass">
+            <tag name="compiler.pass" priority="100" />
+        </service>
+    </services>
+</container>

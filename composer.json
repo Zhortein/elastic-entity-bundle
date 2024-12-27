@@ -1,0 +1,51 @@
+{
+  "name": "zhortein/elastic-entity-bundle",
+  "type": "symfony-bundle",
+  "keywords": ["symfony", "bundle", "elk", "elastic", "elasticsearch", "elastic-search", "entity", "entities"],
+  "description": "This bundle handles doctrine like entities stored in ELK stack.",
+  "homepage": "https://www.david-renard.fr",
+  "license": "GPL-3.0-or-later",
+  "version": "1.0.0",
+  "authors": [
+    {
+      "name": "David Renard",
+      "email": "david.renard.21@free.fr",
+      "homepage": "https://www.david-renard.fr",
+      "role": "Owner, Developer"
+    }
+  ],
+  "require": {
+    "php": ">=8.3",
+    "elasticsearch/elasticsearch": "^8.17",
+    "symfony/event-dispatcher": "^7.2",
+    "symfony/framework-bundle": "^7.1",
+    "symfony/http-client": "^7.1",
+    "symfony/translation": "^7.1"
+  },
+  "require-dev": {
+    "friendsofphp/php-cs-fixer": "^v3.49.0",
+    "phpstan/phpstan": "^2.0",
+    "phpstan/phpstan-symfony": "^2.0",
+    "roave/security-advisories": "dev-latest",
+    "symfony/test-pack": "^1.0"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "php-http/discovery": true
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "Zhortein\\ElasticEntityBundle\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Zhortein\\ElasticEntityBundle\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "php-cs-fixer": "php-cs-fixer fix src --verbose --rules=@Symfony"
+  }
+}
