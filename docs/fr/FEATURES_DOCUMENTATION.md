@@ -22,6 +22,7 @@ Le `ElasticEntityManager` fournit un moyen de gérer des entités stockées dans
     - [Requêtes d'Agrégation](./QueryEntities.md#requêtes-dagrégation)
 - [Intégration des formulaires Symfony](./Forms.md)
 - [Système d'Événements](./EventSystem.md)
+- [Gestion des Métadonnées](./MetadataCollector.md)
 - [Snapshots et Détection des Changements](./ChangeDetection.md)
 - [Fonctionnalité Messenger](./Messenger.md)
 - [Requêtes personnalisées](./CustomQueries.md)

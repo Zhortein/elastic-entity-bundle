@@ -22,6 +22,7 @@ The `ElasticEntityManager` provides a way to handle entities stored in an Elasti
   - [Aggregation Queries](./QueryEntities.md#aggregation-queries)
 - [Symfony Forms Integration](./Forms.md)
 - [Event System](./EventSystem.md)
+- [Metadata Management](./MetadataCollector.md)
 - [Snapshots and Change Detection](./ChangeDetection.md)
 - [Messenger Integration](./Messenger.md)
 - [Custom Queries](./CustomQueries.md)
