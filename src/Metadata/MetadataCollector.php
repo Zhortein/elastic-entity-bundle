@@ -7,6 +7,8 @@ use Symfony\Contracts\Cache\ItemInterface;
 
 class MetadataCollector
 {
+    private const CACHE_LIFETIME = 3600;
+
     /**
      * @var array<string, array{
      *     class: string,
@@ -20,6 +22,26 @@ class MetadataCollector
     public function __construct(CacheInterface $cache)
     {
         $this->cache = $cache;
+    }
+
+    /**
+     * @return array{
+     *     class: string,
+     *     attributes: \ReflectionAttribute<object>[]
+     * }
+     */
+    private function loadMetadata(string $className): array
+    {
+        if (!class_exists($className)) {
+            throw new \InvalidArgumentException("Class $className does not exist.");
+        }
+
+        $reflectionClass = new \ReflectionClass($className);
+
+        return [
+            'class' => $className,
+            'attributes' => $reflectionClass->getAttributes(),
+        ];
     }
 
     /**
@@ -39,6 +61,7 @@ class MetadataCollector
         // Save metadata to cache
         $this->cache->delete($this->getCacheKey($className));
         $this->cache->get($this->getCacheKey($className), function (ItemInterface $item) use ($className) {
+            $item->expiresAfter(self::CACHE_LIFETIME);
             $item->set($this->metadata[$className]);
 
             return $this->metadata[$className];
@@ -56,6 +79,12 @@ class MetadataCollector
     public function getMetadata(string $className): ?array
     {
         return $this->cache->get($this->getCacheKey($className), function (ItemInterface $item) use ($className) {
+            $item->expiresAfter(self::CACHE_LIFETIME);
+
+            if (!isset($this->metadata[$className])) {
+                $this->metadata[$className] = $this->loadMetadata($className);
+            }
+
             return $this->metadata[$className] ?? null;
         });
     }
@@ -79,8 +108,12 @@ class MetadataCollector
     public function clearMetadata(): void
     {
         $this->metadata = [];
-        if (method_exists($this->cache, 'clear')) {
-            $this->cache->clear();
+        try {
+            if (method_exists($this->cache, 'clear')) {
+                $this->cache->clear(); // Supprime tous les caches
+            }
+        } catch (\Exception $e) {
+            throw new \RuntimeException('Failed to clear metadata cache: '.$e->getMessage(), $e->getCode(), $e);
         }
     }
 

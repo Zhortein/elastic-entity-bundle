@@ -4,6 +4,7 @@ namespace Zhortein\ElasticEntityBundle\Tests\Manager;
 
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 use Zhortein\ElasticEntityBundle\Client\ClientWrapper;
 use Zhortein\ElasticEntityBundle\Manager\ElasticEntityManager;
@@ -52,9 +53,10 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
         $clientMock = $this->createMock(ClientWrapper::class);
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
         $this->configureMetadataCollectorMock($metadataCollectorMock);
 
-        $entityManager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $entityManager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $entity = new DummyEntity('123', 'Test Entity');
         $entityManager->persist($entity);
@@ -73,9 +75,10 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
         $clientMock = $this->createMock(ClientWrapper::class);
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
         $this->configureMetadataCollectorMock($metadataCollectorMock);
 
-        $entityManager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $entityManager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $entity = new DummyEntity('123', 'Test Entity');
         $entityManager->remove($entity);
@@ -102,9 +105,10 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
             }));
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
         $this->configureMetadataCollectorMock($metadataCollectorMock);
 
-        $entityManager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $entityManager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $entity = new DummyEntity('123', 'Test Entity');
         $entityManager->persist($entity);
@@ -121,6 +125,7 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
         $clientMock = $this->createMock(ClientWrapper::class);
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
 
         $metadataCollectorMock->expects($this->once())
             ->method('getMetadata')
@@ -132,7 +137,7 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
                 ],
             ]);
 
-        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $entity = (new DummyEntityWithoutFields())->setId('123');
 
@@ -150,6 +155,7 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
         $clientMock = $this->createMock(ClientWrapper::class);
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
 
         $metadataCollectorMock->expects($this->once())
             ->method('getMetadata')
@@ -161,7 +167,7 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
                 ],
             ]);
 
-        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $product1 = new Product();
         $product1->setName('Product 1');
@@ -190,6 +196,7 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
         $clientMock = $this->createMock(ClientWrapper::class);
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
 
         $metadataCollectorMock->expects($this->once())
             ->method('getMetadata')
@@ -201,7 +208,7 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
                 ],
             ]);
 
-        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $customer = new Customer();
         $customer->setId('CUST-123');

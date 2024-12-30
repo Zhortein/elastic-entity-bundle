@@ -2,6 +2,7 @@
 
 namespace Zhortein\ElasticEntityBundle\Manager;
 
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticField;
@@ -9,19 +10,12 @@ use Zhortein\ElasticEntityBundle\Attribute\ElasticRelation;
 use Zhortein\ElasticEntityBundle\Client\ClientWrapper;
 use Zhortein\ElasticEntityBundle\Contracts\ElasticEntityInterface;
 use Zhortein\ElasticEntityBundle\Event\ElasticEntityEvent;
+use Zhortein\ElasticEntityBundle\Exception\ValidationException;
 use Zhortein\ElasticEntityBundle\Metadata\MetadataCollector;
 use Zhortein\ElasticEntityBundle\Metrics\QueryMetrics;
 
 class ElasticEntityManager
 {
-    /**
-     * @var array<string, array{
-     *      class: string,
-     *      attributes: \ReflectionAttribute<object>[]
-     *  }|null>
-     */
-    private array $metadataCache = [];
-
     /**
      * @var array<int, array{
      *     entity: ElasticEntityInterface,
@@ -56,7 +50,49 @@ class ElasticEntityManager
         private readonly ClientWrapper $client,
         private readonly MetadataCollector $metadataCollector,
         private readonly EventDispatcherInterface $eventDispatcher,
+        private readonly ValidatorInterface $validator,
     ) {
+    }
+
+    /**
+     * @throws \ReflectionException
+     */
+    private function validate(object $entity): void
+    {
+        $violations = $this->validator->validate($entity);
+
+        if ($violations->count() > 0) {
+            $messages = [];
+            foreach ($violations as $violation) {
+                $messages[] = sprintf('%s: %s', $violation->getPropertyPath(), $violation->getMessage());
+            }
+
+            throw new ValidationException(implode(', ', $messages));
+        }
+
+        // Validation des relations
+        $className = $entity::class;
+        $fieldConfigs = $this->getFieldConfigurations($className);
+
+        foreach ($fieldConfigs as $field => $config) {
+            if (isset($config['relation']) && is_array($config['relation']) && isset($config['relation']['targetClass'])) {
+                $relatedClass = $config['relation']['targetClass'];
+                $property = new \ReflectionProperty($entity, $field);
+
+                if ($property->isInitialized($entity)) {
+                    $relatedValue = $property->getValue($entity);
+                    if (is_array($relatedValue)) {
+                        foreach ($relatedValue as $relatedEntity) {
+                            if (is_object($relatedEntity)) {
+                                $this->validate($relatedEntity);
+                            }
+                        }
+                    } elseif (is_object($relatedValue)) {
+                        $this->validate($relatedValue);
+                    }
+                }
+            }
+        }
     }
 
     /**
@@ -107,26 +143,24 @@ class ElasticEntityManager
      */
     private function getIndexConfiguration(string $className): array
     {
-        if (!isset($this->metadataCache[$className])) {
-            $this->metadataCache[$className] = $this->metadataCollector->getMetadata($className);
+        $metadata = $this->metadataCollector->getMetadata($className);
+
+        if (null === $metadata || !array_key_exists('attributes', $metadata)) {
+            throw new \RuntimeException("No metadata found for class: $className");
         }
 
-        $metadata = $this->metadataCache[$className];
+        foreach ($metadata['attributes'] as $attribute) {
+            if ($attribute instanceof \ReflectionAttribute && ElasticEntity::class === $attribute->getName()) {
+                /** @var ElasticEntity $instance */
+                $instance = $attribute->newInstance();
 
-        if (null !== $metadata && array_key_exists('attributes', $metadata)) {
-            foreach ($metadata['attributes'] as $attribute) {
-                if ($attribute instanceof \ReflectionAttribute && ElasticEntity::class === $attribute->getName()) {
-                    /** @var ElasticEntity $instance */
-                    $instance = $attribute->newInstance();
-
-                    return [
-                        'index' => $instance->index,
-                        'shards' => $instance->shards,
-                        'replicas' => $instance->replicas,
-                        'refreshInterval' => $instance->refreshInterval,
-                        'settings' => $instance->settings,
-                    ];
-                }
+                return [
+                    'index' => $instance->index,
+                    'shards' => $instance->shards,
+                    'replicas' => $instance->replicas,
+                    'refreshInterval' => $instance->refreshInterval,
+                    'settings' => $instance->settings,
+                ];
             }
         }
 
@@ -139,6 +173,7 @@ class ElasticEntityManager
      * @param class-string $className fully qualified class name of the entity
      *
      * @return array<string, array<string, mixed>> configuration of each field in the entity
+     *
      * @throws \ReflectionException
      */
     private function getFieldConfigurations(string $className): array
@@ -217,6 +252,25 @@ class ElasticEntityManager
     }
 
     /**
+     * @param class-string $relatedClass
+     *
+     * @return array<string, mixed>|string the ID of the entity or its full data
+     *
+     * @throws \ReflectionException
+     */
+    private function processRelatedEntity(object $related, string $relatedClass): string|array
+    {
+        if (!$related instanceof ElasticEntityInterface) {
+            throw new \InvalidArgumentException('Related entity must implement ElasticEntityInterface.');
+        }
+
+        // Valider l'entité liée avant de l'inclure dans les données
+        $this->validate($related);
+
+        return $this->extractIdOrData($related, $relatedClass);
+    }
+
+    /**
      * Persist an entity (create or update).
      *
      * @param object $entity the entity to persist
@@ -229,6 +283,8 @@ class ElasticEntityManager
         if (!$entity instanceof ElasticEntityInterface) {
             throw new \InvalidArgumentException('Entity must implement ElasticEntityInterface.');
         }
+
+        $this->validate($entity);
 
         $className = $entity::class;
         $indexConfig = $this->getIndexConfiguration($className);
@@ -250,37 +306,7 @@ class ElasticEntityManager
         $this->trackedEntities[$hash] = $entity;
         $this->snapshots[$hash] = $this->captureSnapshot($entity);
 
-        $data = [];
-        $fieldConfigs = $this->getFieldConfigurations($className);
-        foreach ($fieldConfigs as $field => $config) {
-            $property = new \ReflectionProperty($entity, $field);
-
-            if (($config['nullable'] ?? false) === false && !$property->isInitialized($entity)) {
-                throw new \InvalidArgumentException("Field '{$field}' cannot be null.");
-            }
-
-            if ($property->isInitialized($entity)) {
-                $value = $property->getValue($entity);
-
-                // Gestion des relations
-                if (isset($config['relation']) && is_array($config['relation']) && isset($config['relation']['targetClass'])) {
-                    /** @var class-string $relatedClass */
-                    $relatedClass = $config['relation']['targetClass'];
-                    if (is_array($value)) {
-                        $data[$field] = array_map(
-                            fn ($related) => is_object($related) && is_string($relatedClass)
-                                ? $this->extractIdOrData($related, $relatedClass)
-                                : null,
-                            $value
-                        );
-                    } elseif (is_object($value) && is_string($relatedClass)) {
-                        $data[$field] = $this->extractIdOrData($value, $relatedClass);
-                    }
-                } else {
-                    $data[$field] = $value;
-                }
-            }
-        }
+        $data = $this->prepareDataForPersistence($className, $entity);
 
         $this->pendingOperations[] = [
             'entity' => $entity,
@@ -640,5 +666,47 @@ class ElasticEntityManager
         $entity->setEntityPersisted($isPersisted);
 
         return $entity;
+    }
+
+    /**
+     * @param class-string $className
+     *
+     * @return array<int|string, mixed>
+     *
+     * @throws \ReflectionException
+     */
+    private function prepareDataForPersistence(string $className, ElasticEntityInterface $entity): array
+    {
+        $data = [];
+        $fieldConfigs = $this->getFieldConfigurations($className);
+        foreach ($fieldConfigs as $field => $config) {
+            $property = new \ReflectionProperty($entity, $field);
+
+            if (($config['nullable'] ?? false) === false && !$property->isInitialized($entity)) {
+                throw new \InvalidArgumentException("Field '{$field}' cannot be null.");
+            }
+
+            if ($property->isInitialized($entity)) {
+                $value = $property->getValue($entity);
+
+                // Gestion des relations
+                if (isset($config['relation']) && is_array($config['relation']) && isset($config['relation']['targetClass'])) {
+                    /** @var class-string $relatedClass */
+                    $relatedClass = $config['relation']['targetClass'];
+                    if (is_array($value)) {
+                        $data[$field] = array_filter(array_map(
+                            fn ($related) => is_object($related) ? $this->processRelatedEntity($related, $relatedClass) : null,
+                            $value
+                        ));
+                    } elseif (is_object($value)) {
+                        $data[$field] = $this->processRelatedEntity($value, $relatedClass);
+                    }
+                } else {
+                    $data[$field] = $value;
+                }
+            }
+        }
+
+        return $data;
     }
 }

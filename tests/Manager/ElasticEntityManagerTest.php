@@ -3,7 +3,9 @@
 namespace Zhortein\ElasticEntityBundle\Tests\Manager;
 
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 use Zhortein\ElasticEntityBundle\Client\ClientWrapper;
 use Zhortein\ElasticEntityBundle\Manager\ElasticEntityManager;
@@ -17,6 +19,7 @@ class ElasticEntityManagerTest extends TestCase
         $clientMock = $this->createMock(ClientWrapper::class);
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
 
         $metadataCollectorMock->expects($this->once())
             ->method('getMetadata')
@@ -42,7 +45,7 @@ class ElasticEntityManagerTest extends TestCase
                 ],
             ]);
 
-        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $aggregations = [
             'price_avg' => [
@@ -63,8 +66,9 @@ class ElasticEntityManagerTest extends TestCase
         $clientMock = $this->createMock(ClientWrapper::class);
         $metadataCollectorMock = $this->createMock(MetadataCollector::class);
         $eventDispatcherMock = $this->createMock(EventDispatcher::class);
+        $validatorMock = $this->createMock(ValidatorInterface::class);
 
-        $metadataCollectorMock->expects($this->once())
+        $metadataCollectorMock
             ->method('getMetadata')
             ->with(DummyEntity::class)
             ->willReturn([
@@ -73,7 +77,7 @@ class ElasticEntityManagerTest extends TestCase
                 ],
             ]);
 
-        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock);
+        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
 
         $entity = new DummyEntity();
         $entity->setField1('test value');
@@ -121,5 +125,64 @@ class ElasticEntityManagerTest extends TestCase
             ]);
 
         return $mock;
+    }
+
+    public function testAddAndRetrieveMetadata(): void
+    {
+        $cache = new ArrayAdapter();
+        $collector = new MetadataCollector($cache);
+
+        $reflectionClass = new \ReflectionClass(\stdClass::class);
+        $collector->addMetadata($reflectionClass);
+
+        $metadata = $collector->getMetadata(\stdClass::class);
+
+        $this->assertNotNull($metadata);
+        $this->assertEquals(\stdClass::class, $metadata['class']);
+        $this->assertCount(1, $metadata['attributes']); // Ajusté pour vérifier la présence de l'attribut
+        $this->assertInstanceOf(\ReflectionAttribute::class, $metadata['attributes'][0]);
+        $this->assertEquals('AllowDynamicProperties', $metadata['attributes'][0]->getName());
+    }
+
+    public function testDynamicMetadataLoading(): void
+    {
+        $cache = new ArrayAdapter();
+        $collector = new MetadataCollector($cache);
+
+        $metadata = $collector->getMetadata(\stdClass::class);
+
+        $this->assertNotNull($metadata);
+        $this->assertEquals(\stdClass::class, $metadata['class']);
+        $this->assertCount(1, $metadata['attributes']); // Ajusté pour vérifier la présence de l'attribut
+        $this->assertInstanceOf(\ReflectionAttribute::class, $metadata['attributes'][0]);
+        $this->assertEquals('AllowDynamicProperties', $metadata['attributes'][0]->getName());
+    }
+
+    public function testClearMetadata(): void
+    {
+        $cache = new ArrayAdapter();
+        $collector = new MetadataCollector($cache);
+
+        $reflectionClass = new \ReflectionClass(\stdClass::class);
+        $collector->addMetadata($reflectionClass);
+
+        $collector->clearMetadata();
+
+        // Le cache a été vidé, les métadonnées doivent être recalculées à partir de zéro
+        $metadata = $collector->getMetadata(\stdClass::class);
+        $this->assertNotNull($metadata);
+        $this->assertEquals(\stdClass::class, $metadata['class']);
+        $this->assertCount(1, $metadata['attributes']);
+    }
+
+    public function testExceptionForNonExistentClass(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Class NonExistentClass does not exist.');
+
+        $cache = new ArrayAdapter();
+        $collector = new MetadataCollector($cache);
+
+        $collector->getMetadata('NonExistentClass');
     }
 }
