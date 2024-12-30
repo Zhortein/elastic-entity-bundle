@@ -6,7 +6,7 @@ Entities are defined using PHP attributes (`#[...]`) to describe their mapping t
 - Use the `ElasticEntityTrait` for common behavior.
 
 #### ElasticEntity Attribute
-Defines the Elasticsearch index configuration for the entity.
+The `ElasticEntity` attribute defines the Elasticsearch index configuration for the entity.
 
 ```php
 use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
@@ -24,14 +24,14 @@ class Product
 }
 ```
 
-- **index**: The name of the Elasticsearch index.
-- **shards**: Number of primary shards.
-- **replicas**: Number of replica shards.
-- **refreshInterval**: Refresh interval for the index.
-- **settings**: Additional index settings.
+- **`index`**: The name of the Elasticsearch index. It must be unique within your cluster.
+- **`shards`**: Defines the number of primary shards for the index. Each shard is a self-contained piece of data that can be distributed across nodes. Increasing the shard count can improve indexing performance but might increase overhead.
+- **`replicas`**: Specifies the number of replica shards. Replica shards provide fault tolerance by duplicating the data stored in primary shards.
+- **`refreshInterval`**: Controls how often the index is refreshed, making recent changes searchable. A lower interval ensures up-to-date search results but can impact performance. Example: `'1s'` (every second).
+- **`settings`**: Allows specifying additional configuration for the index. For example, `'number_of_routing_shards'` controls sharding during reindexing operations.
 
 #### ElasticField Attribute
-Defines a field in the Elasticsearch document.
+The `ElasticField` attribute defines individual fields in the Elasticsearch document.
 
 ```php
 use Zhortein\ElasticEntityBundle\Attribute\ElasticField;
@@ -39,18 +39,25 @@ use Zhortein\ElasticEntityBundle\Attribute\ElasticField;
 #[ElasticField(
     type: 'text',
     analyzer: 'standard',
-    nullable: false
+    nullable: false,
+    directives: ['boost' => 2.0]
 )]
 private string $name;
 ```
 
-- **type**: Field type (e.g., `text`, `keyword`, `integer`).
-- **analyzer**: Analyzer to use for the field.
-- **nullable**: Whether the field can be null.
-- **directives**: Additional field options.
+- **`type`**: Specifies the field type. Examples include:
+    - `text`: Analyzed text field used for full-text search.
+    - `keyword`: Exact match field used for filtering or sorting.
+    - `integer`, `float`: Numeric fields for calculations.
+- **`analyzer`**: Defines the analyzer used for processing text. Example:
+    - `standard`: Default tokenizer with basic language support.
+    - `english`: An English-specific analyzer for stemming and stop words.
+- **`nullable`**: Indicates whether the field can be null. If `false`, validation will ensure the field is always set.
+- **`directives`**: Additional directives for fine-tuning Elasticsearch behavior. Example:
+    - `boost`: Increases the relevance score of a field during search queries.
 
 #### ElasticRelation Attribute
-Defines a relationship to another entity.
+The `ElasticRelation` attribute defines relationships between entities.
 
 ```php
 use Zhortein\ElasticEntityBundle\Attribute\ElasticRelation;
@@ -62,10 +69,42 @@ use Zhortein\ElasticEntityBundle\Attribute\ElasticRelation;
 private Category $category;
 ```
 
-- **targetClass**: The related entity class.
-- **type**: Type of relation (`nested` or `reference`).
-    - `reference`: Store and retrieve entities by ID.
-    - `nested`: Embed entities directly within the parent entity.
+- **`targetClass`**: Specifies the related entity class. The related entity must also implement `ElasticEntityInterface`.
+- **`type`**: Specifies the relation type:
+    - **`nested`**: The related entities are embedded directly within the parent entity as sub-documents. Useful for maintaining a hierarchical structure.
+    - **`reference`**: Only the IDs of related entities are stored, and relationships are resolved dynamically. This approach minimizes data duplication but requires additional queries to retrieve related data.
+
+#### Detailed Explanation of Key Concepts
+
+##### Shards
+- **Purpose**: Distributes data across multiple nodes in an Elasticsearch cluster for scalability.
+- **Usage**: Use fewer shards for small datasets. Increase the number of shards for large datasets to optimize storage and search performance.
+- **Example**: `shards: 3` creates three primary shards for the index.
+
+##### Replicas
+- **Purpose**: Provides redundancy and high availability by duplicating primary shards.
+- **Usage**: At least one replica is recommended for production systems.
+- **Example**: `replicas: 1` ensures one copy of each primary shard.
+
+##### Refresh Interval
+- **Purpose**: Controls how often data becomes searchable after being indexed.
+- **Usage**: Set to `-1` for bulk indexing operations where immediate searchability is not required.
+- **Example**: `refreshInterval: '30s'` refreshes the index every 30 seconds.
+
+##### Analyzer
+- **Purpose**: Defines how text fields are tokenized and normalized.
+- **Usage**: Choose analyzers suited to the language and use case.
+- **Example**: `analyzer: 'french'` applies language-specific rules for French text.
+
+##### Nested Relations
+- **Purpose**: Represents hierarchical or complex objects.
+- **Usage**: Allows querying child objects independently within a parent entity.
+- **Example**: Querying all products where the category name contains "electronics."
+
+##### Reference Relations
+- **Purpose**: Avoids duplication by storing only references to related entities.
+- **Usage**: Use when relationships are dynamic or data duplication is a concern.
+- **Example**: Storing user IDs instead of embedding full user profiles.
 
 #### Complete Example
 
