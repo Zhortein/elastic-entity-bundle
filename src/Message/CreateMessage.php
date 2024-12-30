@@ -2,20 +2,33 @@
 
 namespace Zhortein\ElasticEntityBundle\Message;
 
-class CreateMessage implements ElasticEntityMessageInterface
+use Zhortein\ElasticEntityBundle\Contracts\ElasticEntityInterface;
+
+readonly class CreateMessage implements ElasticEntityMessageInterface
 {
+    /**
+     * @param class-string<ElasticEntityInterface> $className
+     * @param array<string, mixed>                 $payload
+     */
+    public function __construct(
+        private string $className,
+        private string $id,
+        private array $payload,
+    ) {
+    }
+
     public function getClassName(): string
     {
-        // TODO: Implement getClassName() method.
+        return $this->className;
     }
 
     public function getId(): string
     {
-        // TODO: Implement getId() method.
+        return $this->id;
     }
 
     public function getPayload(): array
     {
-        // TODO: Implement getPayload() method.
+        return $this->payload;
     }
 }

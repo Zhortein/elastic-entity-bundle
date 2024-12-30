@@ -2,8 +2,13 @@
 
 namespace Zhortein\ElasticEntityBundle\Message;
 
-class DeleteMessage implements ElasticEntityMessageInterface
+use Zhortein\ElasticEntityBundle\Contracts\ElasticEntityInterface;
+
+readonly class DeleteMessage implements ElasticEntityMessageInterface
 {
+    /**
+     * @param class-string<ElasticEntityInterface> $className
+     */
     public function __construct(
         private string $className,
         private string $id,
