@@ -18,7 +18,7 @@ Le `ElasticEntityManager` fournit un moyen de gérer des entités stockées dans
 - [Flush des Opérations](./FlushOperations.md)
 - [Requête sur les Entités](./QueryEntities.md)
     - [Recherche par ID](./QueryEntities.md#recherche-par-id)
-    - [Recherche avec Critères](./QueryEntities.md#recherche-avec-critères)
+    - [Recherche avec Critères](./QueryEntities.md#recherche-avec-des-critères)
     - [Requêtes d'Agrégation](./QueryEntities.md#requêtes-dagrégation)
 - [Intégration des formulaires Symfony](./Forms.md)
 - [Système d'Événements](./EventSystem.md)
