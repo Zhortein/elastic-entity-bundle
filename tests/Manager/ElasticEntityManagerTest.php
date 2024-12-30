@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 use Zhortein\ElasticEntityBundle\Client\ClientWrapper;
 use Zhortein\ElasticEntityBundle\Manager\ElasticEntityManager;
@@ -45,7 +46,8 @@ class ElasticEntityManagerTest extends TestCase
                 ],
             ]);
 
-        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
+        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock,
+            $this->createMock(TranslatorInterface::class));
 
         $aggregations = [
             'price_avg' => [
@@ -77,7 +79,8 @@ class ElasticEntityManagerTest extends TestCase
                 ],
             ]);
 
-        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock);
+        $manager = new ElasticEntityManager($clientMock, $metadataCollectorMock, $eventDispatcherMock, $validatorMock,
+            $this->createMock(TranslatorInterface::class));
 
         $entity = new DummyEntity();
         $entity->setField1('test value');
@@ -130,7 +133,7 @@ class ElasticEntityManagerTest extends TestCase
     public function testAddAndRetrieveMetadata(): void
     {
         $cache = new ArrayAdapter();
-        $collector = new MetadataCollector($cache);
+        $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
         $reflectionClass = new \ReflectionClass(\stdClass::class);
         $collector->addMetadata($reflectionClass);
@@ -147,7 +150,7 @@ class ElasticEntityManagerTest extends TestCase
     public function testDynamicMetadataLoading(): void
     {
         $cache = new ArrayAdapter();
-        $collector = new MetadataCollector($cache);
+        $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
         $metadata = $collector->getMetadata(\stdClass::class);
 
@@ -161,7 +164,7 @@ class ElasticEntityManagerTest extends TestCase
     public function testClearMetadata(): void
     {
         $cache = new ArrayAdapter();
-        $collector = new MetadataCollector($cache);
+        $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
         $reflectionClass = new \ReflectionClass(\stdClass::class);
         $collector->addMetadata($reflectionClass);
@@ -181,7 +184,7 @@ class ElasticEntityManagerTest extends TestCase
         $this->expectExceptionMessage('Class NonExistentClass does not exist.');
 
         $cache = new ArrayAdapter();
-        $collector = new MetadataCollector($cache);
+        $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
         $collector->getMetadata('NonExistentClass');
     }

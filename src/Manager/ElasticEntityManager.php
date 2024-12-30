@@ -4,6 +4,7 @@ namespace Zhortein\ElasticEntityBundle\Manager;
 
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticField;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticRelation;
@@ -51,7 +52,13 @@ class ElasticEntityManager
         private readonly MetadataCollector $metadataCollector,
         private readonly EventDispatcherInterface $eventDispatcher,
         private readonly ValidatorInterface $validator,
+        private readonly TranslatorInterface $translator,
     ) {
+    }
+
+    public function getClient(): ClientWrapper
+    {
+        return $this->client;
     }
 
     /**
@@ -67,7 +74,7 @@ class ElasticEntityManager
                 $messages[] = sprintf('%s: %s', $violation->getPropertyPath(), $violation->getMessage());
             }
 
-            throw new ValidationException(implode(', ', $messages));
+            throw new ValidationException($this->translator, implode(', ', $messages));
         }
 
         // Validation des relations
@@ -146,7 +153,7 @@ class ElasticEntityManager
         $metadata = $this->metadataCollector->getMetadata($className);
 
         if (null === $metadata || !array_key_exists('attributes', $metadata)) {
-            throw new \RuntimeException("No metadata found for class: $className");
+            throw new \RuntimeException($this->translator->trans('manager.no-metatadata-for-class', ['className' => $className], 'zhortein_elastic_entity-manager'));
         }
 
         foreach ($metadata['attributes'] as $attribute) {
@@ -164,7 +171,7 @@ class ElasticEntityManager
             }
         }
 
-        throw new \RuntimeException("No ElasticEntity attribute found for class: $className");
+        throw new \RuntimeException($this->translator->trans('manager.no-elastic-entity-attribute-for-class', ['className' => $className], 'zhortein_elastic_entity-manager'));
     }
 
     /**
@@ -237,7 +244,7 @@ class ElasticEntityManager
         $fieldConfigurations = $this->getFieldConfigurations($className);
 
         if (empty($fieldConfigurations)) {
-            throw new \InvalidArgumentException(sprintf('The entity of class %s does not have a valid ID and cannot be mapped.', $className));
+            throw new \InvalidArgumentException($this->translator->trans('manager.invalid-identifier-for-class', ['className' => $className], 'zhortein_elastic_entity-manager'));
         }
 
         return $fieldConfigurations;
@@ -261,7 +268,7 @@ class ElasticEntityManager
     private function processRelatedEntity(object $related, string $relatedClass): string|array
     {
         if (!$related instanceof ElasticEntityInterface) {
-            throw new \InvalidArgumentException('Related entity must implement ElasticEntityInterface.');
+            throw new \InvalidArgumentException($this->translator->trans('manager.entity-must-implement-interface', ['className' => $relatedClass], 'zhortein_elastic_entity-manager'));
         }
 
         // Valider l'entité liée avant de l'inclure dans les données
@@ -281,7 +288,7 @@ class ElasticEntityManager
     public function persist(object $entity): void
     {
         if (!$entity instanceof ElasticEntityInterface) {
-            throw new \InvalidArgumentException('Entity must implement ElasticEntityInterface.');
+            throw new \InvalidArgumentException($this->translator->trans('manager.entity-must-implement-interface', ['className' => $entity::class], 'zhortein_elastic_entity-manager'));
         }
 
         $this->validate($entity);
@@ -292,7 +299,7 @@ class ElasticEntityManager
 
         $id = $entity->getId();
         if (!$id) {
-            throw new \InvalidArgumentException('Entity must have a getId method that returns a non-null value. Ensure the "id" property is initialized.');
+            throw new \InvalidArgumentException($this->translator->trans('manager.entity-must-implement-valid-getid', ['className' => $className], 'zhortein_elastic_entity-manager'));
         }
 
         // Vérifie si l'opération existe déjà
@@ -330,7 +337,7 @@ class ElasticEntityManager
     public function remove(object $entity): void
     {
         if (!$entity instanceof ElasticEntityInterface) {
-            throw new \InvalidArgumentException('Entity must implement ElasticEntityInterface.');
+            throw new \InvalidArgumentException($this->translator->trans('manager.entity-must-implement-interface', ['className' => $entity::class], 'zhortein_elastic_entity-manager'));
         }
 
         $className = $entity::class;
@@ -339,7 +346,7 @@ class ElasticEntityManager
 
         $id = $entity->getId();
         if (!$id) {
-            throw new \InvalidArgumentException('Entity must have a getId method that returns a non-null value.');
+            throw new \InvalidArgumentException($this->translator->trans('manager.entity-must-implement-valid-getid', ['className' => $className], 'zhortein_elastic_entity-manager'));
         }
 
         $this->pendingOperations[] = [
@@ -499,7 +506,7 @@ class ElasticEntityManager
         $query = ['bool' => ['must' => []]];
         foreach ($criteria as $field => $condition) {
             if (!isset($fieldConfigs[$field])) {
-                throw new \InvalidArgumentException("Invalid field: $field for class: $className");
+                throw new \InvalidArgumentException($this->translator->trans('manager.invalid-field-for-entity', ['className' => $className, 'fieldName' => $field], 'zhortein_elastic_entity-manager'));
             }
 
             // Gestion des critères avancés
@@ -529,7 +536,7 @@ class ElasticEntityManager
         $sort = [];
         foreach ($orderBy as $field => $direction) {
             if (!isset($fieldConfigs[$field])) {
-                throw new \InvalidArgumentException("Invalid sort field: $field for class: $className");
+                throw new \InvalidArgumentException($this->translator->trans('manager.invalid-sort-field-for-entity', ['className' => $className, 'fieldName' => $field], 'zhortein_elastic_entity-manager'));
             }
             $sort[] = [$field => ['order' => 'desc' === strtolower($direction) ? 'desc' : 'asc']];
         }
@@ -578,7 +585,7 @@ class ElasticEntityManager
         $query = ['bool' => ['must' => []]];
         foreach ($criteria as $field => $value) {
             if (!isset($fieldConfigs[$field])) {
-                throw new \InvalidArgumentException("Invalid field: $field for class: $className");
+                throw new \InvalidArgumentException($this->translator->trans('manager.invalid-field-for-entity', ['className' => $className, 'fieldName' => $field], 'zhortein_elastic_entity-manager'));
             }
             $query['bool']['must'][] = ['match' => [$field => $value]];
         }
@@ -593,7 +600,7 @@ class ElasticEntityManager
 
         $response = $this->client->search($params);
         if (!isset($response['aggregations']) || !is_array($response['aggregations'])) {
-            throw new \RuntimeException('Invalid aggregation response format');
+            throw new \RuntimeException($this->translator->trans('manager.invalid-aggregation-response-format', [], 'zhortein_elastic_entity-manager'));
         }
 
         return $response['aggregations'];
@@ -612,7 +619,7 @@ class ElasticEntityManager
     {
         $entity = new $className();
         if (!$entity instanceof ElasticEntityInterface) {
-            throw new \InvalidArgumentException('Entity must implement ElasticEntityInterface.');
+            throw new \InvalidArgumentException($this->translator->trans('manager.entity-must-implement-interface', ['className' => $className], 'zhortein_elastic_entity-manager'));
         }
 
         $fieldConfigs = $this->getFieldConfigurations($className);
@@ -640,13 +647,13 @@ class ElasticEntityManager
                     /** @var class-string $relatedClass */
                     $relatedClass = $relation['targetClass'];
                     $value = array_map(
-                        function ($nestedData) use ($relatedClass) {
+                        function ($nestedData) use ($relatedClass, $className) {
                             if (!is_array($nestedData)) {
-                                throw new \RuntimeException('Invalid nested data format.');
+                                throw new \RuntimeException($this->translator->trans('manager.invalid-nested-data-format', ['className' => $className, 'relatedClassName' => $relatedClass], 'zhortein_elastic_entity-manager'));
                             }
 
                             if (array_keys($nestedData) !== array_filter(array_keys($nestedData), 'is_string')) {
-                                throw new \InvalidArgumentException('Nested data must be an associative array with string keys.');
+                                throw new \InvalidArgumentException($this->translator->trans('manager.nested-data-format-error', ['className' => $className, 'relatedClassName' => $relatedClass], 'zhortein_elastic_entity-manager'));
                             }
 
                             /* @var array<string, mixed> $nestedData */
@@ -683,7 +690,7 @@ class ElasticEntityManager
             $property = new \ReflectionProperty($entity, $field);
 
             if (($config['nullable'] ?? false) === false && !$property->isInitialized($entity)) {
-                throw new \InvalidArgumentException("Field '{$field}' cannot be null.");
+                throw new \InvalidArgumentException($this->translator->trans('manager.field-not-nullable', ['className' => $className, 'fieldName' => $field], 'zhortein_elastic_entity-manager'));
             }
 
             if ($property->isInitialized($entity)) {
@@ -708,5 +715,81 @@ class ElasticEntityManager
         }
 
         return $data;
+    }
+
+    /**
+     * Execute a custom query on the given Elasticsearch index.
+     *
+     * @param class-string|null    $className the entity class name for result hydration (optional)
+     * @param array<string, mixed> $query     the custom Elasticsearch query
+     * @param array<string, mixed> $options   Additional query options (e.g., sorting, size).
+     *
+     * @return array<mixed> hydrated entities or raw Elasticsearch results
+     */
+    public function executeCustomQuery(?string $className, array $query, array $options = []): array
+    {
+        if ($className) {
+            $indexConfig = $this->getIndexConfiguration($className);
+            $index = $indexConfig['index'];
+        } else {
+            $index = $options['index'] ?? throw new \InvalidArgumentException($this->translator->trans('manager.custom-query.index-cannot-be-null', [], 'zhortein_elastic_entity-manager'));
+        }
+
+        $params = [
+            'index' => $index,
+            'body' => $query,
+        ];
+
+        if (isset($options['size'])) {
+            $params['body']['size'] = $options['size'];
+        }
+        if (isset($options['from'])) {
+            $params['body']['from'] = $options['from'];
+        }
+        if (isset($options['sort'])) {
+            $params['body']['sort'] = $options['sort'];
+        }
+
+        $response = $this->client->search($params);
+
+        $results = [];
+        if (is_array($response['hits']) && isset($response['hits']['hits']) && is_array($response['hits']['hits'])) {
+            $results = array_filter($response['hits']['hits'], static fn ($hit) => is_array($hit) && isset($hit['_source']));
+        }
+
+        if ($className) {
+            return array_map(function (array $hit) use ($className): object {
+                /** @var array<int|string, mixed> $source */
+                $source = $hit['_source'];
+
+                return $this->hydrateEntity($className, $source);
+            }, $results);
+        }
+
+        return $results;
+    }
+
+    /**
+     * Count entities based on a custom query.
+     *
+     * @param string               $index the Elasticsearch index to query
+     * @param array<string, mixed> $query the custom Elasticsearch query
+     *
+     * @return int the count of matching entities
+     */
+    public function countCustomQuery(string $index, array $query): int
+    {
+        $params = [
+            'index' => $index,
+            'body' => $query,
+        ];
+
+        $response = $this->client->count($params);
+
+        if (!isset($response['count']) || !is_int($response['count'])) {
+            throw new \RuntimeException('Unexpected response format from Elasticsearch count query.');
+        }
+
+        return $response['count'];
     }
 }

@@ -67,7 +67,7 @@ class ClientWrapper
      *
      * @return array<string, mixed> The Elasticsearch response
      */
-    public function update(string $index, array $params): array
+    public function update(array $params): array
     {
         return $this->execute('update', $params);
     }
@@ -105,5 +105,17 @@ class ClientWrapper
         } catch (ClientResponseException|ServerResponseException|ElasticsearchException $e) {
             throw new \RuntimeException(sprintf('Error during %s request: %s', strtoupper($operation), $e->getMessage()), $e->getCode(), $e);
         }
+    }
+
+    /**
+     * Count in Elasticsearch.
+     *
+     * @param array<string, mixed> $params
+     *
+     * @return array<string, mixed> The Elasticsearch response
+     */
+    public function count(array $params): array
+    {
+        return $this->execute('count', $params);
     }
 }

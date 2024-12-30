@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" target-language="en" datatype="plaintext" original="file_content">
+        <body>
+            <trans-unit id="0" resname="manager.no-metatadata-for-class">
+                <source>No metadata found for class: {className}</source>
+                <target>No metadata found for class: {className}</target>
+            </trans-unit>
+            <trans-unit id="1" resname="manager.no-elastic-entity-attribute-for-class">
+                <source>No ElasticEntity attribute found for class: {className}</source>
+                <target>No ElasticEntity attribute found for class: {className}</target>
+            </trans-unit>
+            <trans-unit id="2" resname="manager.invalid-identifier-for-class">
+                <source>The entity of class {className} does not have a valid ID and cannot be mapped.</source>
+                <target>The entity of class {className} does not have a valid ID and cannot be mapped.</target>
+            </trans-unit>
+            <trans-unit id="3" resname="manager.entity-must-implement-interface">
+                <source>Entity {className} must implement ElasticEntityInterface.</source>
+                <target>Entity {className} must implement ElasticEntityInterface.</target>
+            </trans-unit>
+            <trans-unit id="4" resname="manager.entity-must-implement-valid-getid">
+                <source>Entity {className} must have a getId method that returns a non-null value. Ensure the "id" property is initialized.</source>
+                <target>Entity {className} must have a getId method that returns a non-null value. Ensure the "id" property is initialized.</target>
+            </trans-unit>
+            <trans-unit id="5" resname="manager.invalid-field-for-entity">
+                <source>Entity {className} have an invalid field {fieldName}.</source>
+                <target>Entity {className} have an invalid field {fieldName}.</target>
+            </trans-unit>
+            <trans-unit id="6" resname="manager.invalid-sort-field-for-entity">
+                <source>Invalid sort field {fieldName} on Entity {className}.</source>
+                <target>Invalid sort field {fieldName} on Entity {className}.</target>
+            </trans-unit>
+            <trans-unit id="7" resname="manager.invalid-aggregation-response-format">
+                <source>Invalid aggregation response format.</source>
+                <target>Invalid aggregation response format.</target>
+            </trans-unit>
+            <trans-unit id="8" resname="manager.invalid-nested-data-format">
+                <source>Invalid nested data format in Entity {className} for relation with {relatedClassName}.</source>
+                <target>Invalid nested data format in Entity {className} for relation with {relatedClassName}.</target>
+            </trans-unit>
+            <trans-unit id="9" resname="manager.nested-data-format-error">
+                <source>Nested data must be an associative array with string keys in Entity {className} for relation with {relatedClassName}.</source>
+                <target>Nested data must be an associative array with string keys in Entity {className} for relation with {relatedClassName}.</target>
+            </trans-unit>
+            <trans-unit id="10" resname="manager.field-not-nullable">
+                <source>Entity {className} : {fieldName} cannot be null.</source>
+                <target>Entity {className} : {fieldName} cannot be null.</target>
+            </trans-unit>
+            <trans-unit id="11" resname="manager.custom-query.index-cannot-be-null">
+                <source>Index must be provided when no className is provided.</source>
+                <target>Index must be provided when no className is provided.</target>
+            </trans-unit>
+            <trans-unit id="12" resname="manager.custom-count-query.unexpected-response">
+                <source>Unexpected response format from Elasticsearch count query.</source>
+                <target>Unexpected response format from Elasticsearch count query.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

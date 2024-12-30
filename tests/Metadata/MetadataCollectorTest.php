@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Cache\Adapter\ArrayAdapter;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 use Zhortein\ElasticEntityBundle\Metadata\MetadataCollector;
 
 class MetadataCollectorTest extends TestCase
@@ -20,7 +21,7 @@ class MetadataCollectorTest extends TestCase
                 return $callback($this->createMock(ItemInterface::class));
             });
 
-        $collector = new MetadataCollector($cacheMock);
+        $collector = new MetadataCollector($cacheMock, $this->createMock(TranslatorInterface::class));
 
         $reflectionClass = new \ReflectionClass(self::class);
         $collector->addMetadata($reflectionClass);
@@ -35,7 +36,7 @@ class MetadataCollectorTest extends TestCase
     {
         $cacheMock = $this->createMock(CacheInterface::class);
 
-        $collector = new MetadataCollector($cacheMock);
+        $collector = new MetadataCollector($cacheMock, $this->createMock(TranslatorInterface::class));
 
         $reflectionClass1 = new \ReflectionClass(self::class);
         $reflectionClass2 = new \ReflectionClass(MetadataCollector::class);
@@ -55,7 +56,7 @@ class MetadataCollectorTest extends TestCase
         // Use a real cache adapter for testing
         $cache = new ArrayAdapter();
 
-        $collector = new MetadataCollector($cache);
+        $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
         $reflectionClass = new \ReflectionClass(self::class);
         $collector->addMetadata($reflectionClass);

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file source-language="en" target-language="en" datatype="plaintext" original="file_content">
+        <body>
+            <trans-unit id="0" resname="metadata.failed-to-clear">
+                <source>Failed to clear metadata cache: {exceptionMessage}</source>
+                <target>Failed to clear metadata cache: {exceptionMessage}</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

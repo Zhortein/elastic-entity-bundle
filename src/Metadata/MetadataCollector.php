@@ -4,10 +4,11 @@ namespace Zhortein\ElasticEntityBundle\Metadata;
 
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
+use Symfony\Contracts\Translation\TranslatorInterface;
 
 class MetadataCollector
 {
-    private const CACHE_LIFETIME = 3600;
+    private const int CACHE_LIFETIME = 3600;
 
     /**
      * @var array<string, array{
@@ -18,10 +19,12 @@ class MetadataCollector
     private array $metadata = [];
 
     private CacheInterface $cache;
+    private TranslatorInterface $translator;
 
-    public function __construct(CacheInterface $cache)
+    public function __construct(CacheInterface $cache, TranslatorInterface $translator)
     {
         $this->cache = $cache;
+        $this->translator = $translator;
     }
 
     /**
@@ -113,7 +116,7 @@ class MetadataCollector
                 $this->cache->clear(); // Supprime tous les caches
             }
         } catch (\Exception $e) {
-            throw new \RuntimeException('Failed to clear metadata cache: '.$e->getMessage(), $e->getCode(), $e);
+            throw new \RuntimeException($this->translator->trans('metadata.failed-to-clear', ['exceptionMessage' => $e->getMessage()], 'zhortein_elastic_entity-metadata'), $e->getCode(), $e);
         }
     }
 
