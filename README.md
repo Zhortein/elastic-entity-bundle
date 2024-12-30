@@ -79,7 +79,7 @@ $aggregations = $manager->aggregate(Product::class, [
 ]);
 ```
 
-For detailed functionality and examples, see the [Features Documentation](docs/FEATURES_DOCUMENTATION_en.md).
+For detailed functionality and examples, see the [Features Documentation](docs/en/FEATURES_DOCUMENTATION.md).
 
 ---
 
@@ -162,4 +162,4 @@ $aggregations = $manager->aggregate(Product::class, [
 ]);
 ```
 
-Pour un détail des fonctionnalités et des exemples, consultez la [Documentation des Fonctionnalités](docs/FEATURES_DOCUMENTATION_fr.md).
+Pour un détail des fonctionnalités et des exemples, consultez la [Documentation des Fonctionnalités](docs/fr/FEATURES_DOCUMENTATION.md).

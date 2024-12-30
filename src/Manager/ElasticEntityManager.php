@@ -792,4 +792,20 @@ class ElasticEntityManager
 
         return $response['count'];
     }
+
+    /**
+     * Convert a payload into an ElasticEntityInterface instance.
+     *
+     * @param class-string<ElasticEntityInterface> $className
+     * @param array<string, mixed>                 $payload
+     */
+    public function hydratePayloadToEntity(string $className, array $payload): ElasticEntityInterface
+    {
+        $entity = $this->hydrateEntity($className, $payload);
+        if (!$entity instanceof ElasticEntityInterface) {
+            throw new \InvalidArgumentException($this->translator->trans('manager.entity-must-implement-interface', ['className' => $className], 'zhortein_elastic_entity-manager'));
+        }
+
+        return $entity;
+    }
 }
