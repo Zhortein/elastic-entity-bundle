@@ -135,8 +135,7 @@ class ElasticEntityManagerTest extends TestCase
         $cache = new ArrayAdapter();
         $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
-        $reflectionClass = new \ReflectionClass(\stdClass::class);
-        $collector->addMetadata($reflectionClass);
+        $collector->addMetadata(\stdClass::class);
 
         $metadata = $collector->getMetadata(\stdClass::class);
 
@@ -166,8 +165,7 @@ class ElasticEntityManagerTest extends TestCase
         $cache = new ArrayAdapter();
         $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
-        $reflectionClass = new \ReflectionClass(\stdClass::class);
-        $collector->addMetadata($reflectionClass);
+        $collector->addMetadata(\stdClass::class);
 
         $collector->clearMetadata();
 

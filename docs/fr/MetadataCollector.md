@@ -9,8 +9,7 @@ Le `MetadataCollector` est une composante essentielle du bundle, responsable de 
 
 1. **Ajout de Métadonnées** : Le `MetadataCollector` peut ajouter des métadonnées pour une classe donnée.
    ```php
-   $reflectionClass = new \ReflectionClass(Product::class);
-   $metadataCollector->addMetadata($reflectionClass);
+   $metadataCollector->addMetadata(Product::class);
    ```
 
 2. **Récupération des Métadonnées** : Les métadonnées d’une classe peuvent être récupérées facilement.
@@ -21,7 +20,7 @@ Le `MetadataCollector` est une composante essentielle du bundle, responsable de 
 3. **Métadonnées Dynamiques** : Charge dynamiquement les métadonnées au besoin.
    ```php
    if ($metadataCollector->getMetadata(Order::class) === null) {
-       $metadataCollector->addMetadata(new \ReflectionClass(Order::class));
+       $metadataCollector->addMetadata(Order::class);
    }
    ```
 
@@ -39,11 +38,10 @@ Le `MetadataCollector` est une composante essentielle du bundle, responsable de 
 ```php
 use Zhortein\ElasticEntityBundle\Metadata\MetadataCollector;
 
-$reflectionClass = new \ReflectionClass(Product::class);
 $metadataCollector = new MetadataCollector($cacheInterface);
 
 // Ajouter des métadonnées
-$metadataCollector->addMetadata($reflectionClass);
+$metadataCollector->addMetadata(Product::class);
 
 // Récupérer des métadonnées
 $metadata = $metadataCollector->getMetadata(Product::class);

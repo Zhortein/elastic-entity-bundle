@@ -29,9 +29,9 @@ Adds metadata for a given ElasticEntity class.
 /**
  * Add metadata for an ElasticEntity class.
  *
- * @param \ReflectionClass<object> $reflectionClass
+ * @param class-string $className
  */
-public function addMetadata(\ReflectionClass $reflectionClass): void;
+public function addMetadata(string $className): void;
 ```
 
 - **Parameters:**
@@ -127,8 +127,7 @@ private function getCacheKey(string $className): string;
 ```php
 use Zhortein\ElasticEntityBundle\Metadata\MetadataCollector;
 
-$reflectionClass = new \ReflectionClass(Product::class);
-$metadataCollector->addMetadata($reflectionClass);
+$metadataCollector->addMetadata(Product::class);
 ```
 
 #### Retrieving Metadata

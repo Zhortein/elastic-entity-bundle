@@ -23,8 +23,7 @@ class MetadataCollectorTest extends TestCase
 
         $collector = new MetadataCollector($cacheMock, $this->createMock(TranslatorInterface::class));
 
-        $reflectionClass = new \ReflectionClass(self::class);
-        $collector->addMetadata($reflectionClass);
+        $collector->addMetadata(self::class);
 
         $metadata = $collector->getMetadata(self::class);
         $this->assertNotNull($metadata);
@@ -38,11 +37,8 @@ class MetadataCollectorTest extends TestCase
 
         $collector = new MetadataCollector($cacheMock, $this->createMock(TranslatorInterface::class));
 
-        $reflectionClass1 = new \ReflectionClass(self::class);
-        $reflectionClass2 = new \ReflectionClass(MetadataCollector::class);
-
-        $collector->addMetadata($reflectionClass1);
-        $collector->addMetadata($reflectionClass2);
+        $collector->addMetadata(self::class);
+        $collector->addMetadata(MetadataCollector::class);
 
         $allMetadata = $collector->getAllMetadata();
 
@@ -58,8 +54,7 @@ class MetadataCollectorTest extends TestCase
 
         $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
-        $reflectionClass = new \ReflectionClass(self::class);
-        $collector->addMetadata($reflectionClass);
+        $collector->addMetadata(self::class);
 
         $collector->clearMetadata();
 

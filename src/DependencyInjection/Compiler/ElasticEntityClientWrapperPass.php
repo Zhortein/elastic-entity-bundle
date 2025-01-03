@@ -33,6 +33,5 @@ class ElasticEntityClientWrapperPass implements CompilerPassInterface
             ->setArgument(2, $CABundlePath)
             ->setArgument(3, $elasticMetaHeader)
         ;
-
     }
 }

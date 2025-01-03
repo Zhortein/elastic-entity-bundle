@@ -4,7 +4,6 @@ namespace Zhortein\ElasticEntityBundle\DependencyInjection\Compiler;
 
 use Symfony\Component\DependencyInjection\Compiler\CompilerPassInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
-use Symfony\Component\DependencyInjection\Reference;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 use Zhortein\ElasticEntityBundle\Metadata\MetadataCollector;
 
@@ -27,7 +26,7 @@ class ElasticEntityMetadataPass implements CompilerPassInterface
                 $reflectionClass = new \ReflectionClass($className);
 
                 if ($this->isElasticEntity($reflectionClass)) {
-                    $metadataCollectorDefinition->addMethodCall('addMetadata', [new Reference($reflectionClass->getName())]);
+                    $metadataCollectorDefinition->addMethodCall('addMetadata', [$reflectionClass->getName()]);
                 }
             }
         }

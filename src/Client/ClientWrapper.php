@@ -44,6 +44,9 @@ class ClientWrapper
         $this->client = $clientBuilder->build();
     }
 
+    /**
+     * @return string[]
+     */
     public function getHosts(): array
     {
         return $this->hosts;
