@@ -3,10 +3,13 @@
 namespace Zhortein\ElasticEntityBundle\Client;
 
 use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\ClientBuilder;
+use Elastic\Elasticsearch\Exception\AuthenticationException;
 use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Elastic\Elasticsearch\Exception\ElasticsearchException;
 use Elastic\Elasticsearch\Exception\ServerResponseException;
 use Elastic\Elasticsearch\Response\Elasticsearch;
+use Zhortein\ElasticEntityBundle\DependencyInjection\Configuration;
 use Zhortein\ElasticEntityBundle\Metrics\QueryMetrics;
 
 class ClientWrapper
@@ -14,9 +17,36 @@ class ClientWrapper
     private Client $client;
     private ?QueryMetrics $lastQueryMetrics = null;
 
-    public function __construct(Client $client)
+    /**
+     * @param string[] $hosts
+     *
+     * @throws AuthenticationException
+     */
+    public function __construct(
+        protected array $hosts = Configuration::DEFAULT_HOSTS,
+        protected int $retries = Configuration::DEFAULT_RETRIES,
+        protected string $caBundlePath = Configuration::DEFAULT_CA_BUNDLE_PATH,
+        protected readonly bool $elasticMetaHeaders = Configuration::DEFAULT_ELASTIC_META_HEADER,
+    ) {
+        $clientBuilder = ClientBuilder::create()
+            ->setHosts($this->hosts);
+
+        if (!empty($this->caBundlePath)) {
+            $clientBuilder->setCABundle($this->caBundlePath);
+        }
+
+        if (!empty($this->retries)) {
+            $clientBuilder->setRetries($this->retries);
+        }
+
+        $clientBuilder->setElasticMetaHeader($this->elasticMetaHeaders);
+
+        $this->client = $clientBuilder->build();
+    }
+
+    public function getHosts(): array
     {
-        $this->client = $client;
+        return $this->hosts;
     }
 
     public function getLastQueryMetrics(): ?QueryMetrics
