@@ -2,6 +2,8 @@
 
 namespace Zhortein\ElasticEntityBundle\Metadata;
 
+use PHPStan\BetterReflection\Reflection\Adapter\ReflectionClass;
+use Symfony\Component\DependencyInjection\Reference;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
@@ -50,11 +52,17 @@ class MetadataCollector
     /**
      * Add metadata for an ElasticEntity class.
      *
-     * @param \ReflectionClass<object> $reflectionClass
+     * @param \ReflectionClass<object>|Reference $reflectionClass
+     * @throws \ReflectionException
      */
-    public function addMetadata(\ReflectionClass $reflectionClass): void
+    public function addMetadata(\ReflectionClass|Reference $reflectionClass): void
     {
-        $className = $reflectionClass->getName();
+        if ($reflectionClass instanceof Reference) {
+            $className = (string) $reflectionClass;
+            $reflectionClass = new \ReflectionClass($className);
+        } else {
+            $className = $reflectionClass->getName();
+        }
 
         $this->metadata[$className] = [
             'class' => $className,
