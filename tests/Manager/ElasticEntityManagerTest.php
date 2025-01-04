@@ -26,8 +26,12 @@ class ElasticEntityManagerTest extends TestCase
             ->method('getMetadata')
             ->with(DummyEntity::class)
             ->willReturn([
-                'attributes' => [
-                    $this->createElasticEntityAttributeMock('dummy_index', 1, 1, '1s', ['setting' => 'value']),
+                'index' => [
+                    'index' => 'dummy_index',
+                    'shards' => 1,
+                    'replicas' => 1,
+                    'refreshInterval' => '1s',
+                    ['setting' => 'value'],
                 ],
             ]);
 
@@ -74,6 +78,13 @@ class ElasticEntityManagerTest extends TestCase
             ->method('getMetadata')
             ->with(DummyEntity::class)
             ->willReturn([
+                'index' => [
+                    'index' => 'dummy_index',
+                    'shards' => 1,
+                    'replicas' => 1,
+                    'refreshInterval' => '1s',
+                    ['setting' => 'value'],
+                ],
                 'attributes' => [
                     $this->createElasticEntityAttributeMock('dummy_index', 1, 1, '1s', ['setting' => 'value']),
                 ],
@@ -135,15 +146,10 @@ class ElasticEntityManagerTest extends TestCase
         $cache = new ArrayAdapter();
         $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
-        $collector->addMetadata(\stdClass::class);
-
         $metadata = $collector->getMetadata(\stdClass::class);
 
         $this->assertNotNull($metadata);
         $this->assertEquals(\stdClass::class, $metadata['class']);
-        $this->assertCount(1, $metadata['attributes']); // Ajusté pour vérifier la présence de l'attribut
-        $this->assertInstanceOf(\ReflectionAttribute::class, $metadata['attributes'][0]);
-        $this->assertEquals('AllowDynamicProperties', $metadata['attributes'][0]->getName());
     }
 
     public function testDynamicMetadataLoading(): void
@@ -155,9 +161,7 @@ class ElasticEntityManagerTest extends TestCase
 
         $this->assertNotNull($metadata);
         $this->assertEquals(\stdClass::class, $metadata['class']);
-        $this->assertCount(1, $metadata['attributes']); // Ajusté pour vérifier la présence de l'attribut
-        $this->assertInstanceOf(\ReflectionAttribute::class, $metadata['attributes'][0]);
-        $this->assertEquals('AllowDynamicProperties', $metadata['attributes'][0]->getName());
+        $this->assertCount(5, $metadata['index']);
     }
 
     public function testClearMetadata(): void
@@ -165,15 +169,13 @@ class ElasticEntityManagerTest extends TestCase
         $cache = new ArrayAdapter();
         $collector = new MetadataCollector($cache, $this->createMock(TranslatorInterface::class));
 
-        $collector->addMetadata(\stdClass::class);
-
         $collector->clearMetadata();
 
         // Le cache a été vidé, les métadonnées doivent être recalculées à partir de zéro
         $metadata = $collector->getMetadata(\stdClass::class);
         $this->assertNotNull($metadata);
         $this->assertEquals(\stdClass::class, $metadata['class']);
-        $this->assertCount(1, $metadata['attributes']);
+        $this->assertCount(5, $metadata['index']);
     }
 
     public function testExceptionForNonExistentClass(): void

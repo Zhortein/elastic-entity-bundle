@@ -2,9 +2,11 @@
 
 namespace Zhortein\ElasticEntityBundle\Metadata;
 
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
+use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 
 class MetadataCollector
 {
@@ -12,8 +14,14 @@ class MetadataCollector
 
     /**
      * @var array<string, array{
-     *     class: string,
-     *     attributes: \ReflectionAttribute<object>[]
+     *     class: class-string,
+     *     index: array{
+     *           index: string,
+     *           shards: int|null,
+     *           replicas: int|null,
+     *           refreshInterval: string|null,
+     *           settings: array<string, mixed>
+     *       }
      * }|null>
      */
     private array $metadata = [];
@@ -29,57 +37,68 @@ class MetadataCollector
 
     /**
      * @return array{
-     *     class: string,
-     *     attributes: \ReflectionAttribute<object>[]
+     *     class: class-string,
+     *     index: array{
+     *         index: string,
+     *         shards: int|null,
+     *         replicas: int|null,
+     *         refreshInterval: string|null,
+     *         settings: array<string, mixed>
+     *     }
      * }
      */
-    private function loadMetadata(string $className): array
+    public function loadMetadata(string $className): array
     {
         if (!class_exists($className)) {
             throw new \InvalidArgumentException("Class $className does not exist.");
         }
 
         $reflectionClass = new \ReflectionClass($className);
+        $indexConfig = [
+            'index' => '',
+            'shards' => null,
+            'replicas' => null,
+            'refreshInterval' => null,
+            'settings' => [],
+        ];
+        foreach ($reflectionClass->getAttributes() as $attribute) {
+            if ($attribute instanceof \ReflectionAttribute && ElasticEntity::class === $attribute->getName()) {
+                /** @var ElasticEntity $instance */
+                $instance = $attribute->newInstance();
+                $indexConfig = [
+                    'index' => $instance->index,
+                    'shards' => $instance->shards,
+                    'replicas' => $instance->replicas,
+                    'refreshInterval' => $instance->refreshInterval,
+                    'settings' => $instance->settings,
+                ];
+                break;
+            }
+        }
 
         return [
             'class' => $className,
-            'attributes' => $reflectionClass->getAttributes(),
+            'index' => $indexConfig,
         ];
-    }
-
-    /**
-     * Add metadata for an ElasticEntity class.
-     *
-     * @param class-string $className
-     *
-     * @throws \ReflectionException
-     */
-    public function addMetadata(string $className): void
-    {
-        $reflectionClass = new \ReflectionClass($className);
-
-        $this->metadata[$className] = [
-            'class' => $className,
-            'attributes' => $reflectionClass->getAttributes(),
-        ];
-
-        // Save metadata to cache
-        $this->cache->delete($this->getCacheKey($className));
-        $this->cache->get($this->getCacheKey($className), function (ItemInterface $item) use ($className) {
-            $item->expiresAfter(self::CACHE_LIFETIME);
-            $item->set($this->metadata[$className]);
-
-            return $this->metadata[$className];
-        });
     }
 
     /**
      * Retrieve metadata for a specific ElasticEntity class.
      *
+     * @param class-string $className
+     *
      * @return array{
-     *      class: string,
-     *      attributes: \ReflectionAttribute<object>[]
+     *      class: class-string,
+     *      index: array{
+     *          index: string,
+     *          shards: int|null,
+     *          replicas: int|null,
+     *          refreshInterval: string|null,
+     *          settings: array<string, mixed>
+     *      }
      *  }|null
+     *
+     * @throws InvalidArgumentException
      */
     public function getMetadata(string $className): ?array
     {
@@ -99,7 +118,13 @@ class MetadataCollector
      *
      * @return array<string, array{
      *      class: string,
-     *      attributes: \ReflectionAttribute<object>[]
+     *      index: array{
+     *           index: string,
+     *           shards: int|null,
+     *           replicas: int|null,
+     *           refreshInterval: string|null,
+     *           settings: array<string, mixed>
+     *       }
      *  }|null>
      */
     public function getAllMetadata(): array

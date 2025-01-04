@@ -53,6 +53,13 @@ class ElasticEntityManagerCustomQueryTest extends TestCase
             ->with(DummyEntity::class)
             ->willReturn([
                 'class' => DummyEntity::class,
+                'index' => [
+                    'index' => 'dummy_index',
+                    'shards' => 1,
+                    'replicas' => 1,
+                    'refreshInterval' => '1s',
+                    ['setting' => 'value'],
+                ],
                 'attributes' => [$this->createElasticEntityAttributeMock('dummy_index')],
             ]);
 

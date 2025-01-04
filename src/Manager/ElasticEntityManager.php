@@ -2,14 +2,15 @@
 
 namespace Zhortein\ElasticEntityBundle\Manager;
 
+use Psr\Cache\InvalidArgumentException;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Zhortein\ElasticEntityBundle\Attribute\ElasticEntity;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticField;
 use Zhortein\ElasticEntityBundle\Attribute\ElasticRelation;
 use Zhortein\ElasticEntityBundle\Client\ClientWrapper;
 use Zhortein\ElasticEntityBundle\Contracts\ElasticEntityInterface;
+use Zhortein\ElasticEntityBundle\DTO\ElasticEntityMetadataDTO;
 use Zhortein\ElasticEntityBundle\Event\ElasticEntityEvent;
 use Zhortein\ElasticEntityBundle\Exception\ValidationException;
 use Zhortein\ElasticEntityBundle\Metadata\MetadataCollector;
@@ -144,31 +145,22 @@ class ElasticEntityManager
     /**
      * Retrieve the index name and configuration for a given class.
      *
-     * @param string $className fully qualified class name of the entity
+     * @param class-string $className fully qualified class name of the entity
      *
-     * @return array<string, mixed> configuration of the Elasticsearch index
+     * @return ElasticEntityMetadataDTO configuration of the Elasticsearch index
+     *
+     * @throws InvalidArgumentException
      */
-    private function getIndexConfiguration(string $className): array
+    private function getIndexConfiguration(string $className): ElasticEntityMetadataDTO
     {
         $metadata = $this->metadataCollector->getMetadata($className);
 
-        if (null === $metadata || !array_key_exists('attributes', $metadata)) {
+        if (null === $metadata || !array_key_exists('index', $metadata)) {
             throw new \RuntimeException($this->translator->trans('manager.no-metatadata-for-class', ['className' => $className], 'zhortein_elastic_entity-manager'));
         }
 
-        foreach ($metadata['attributes'] as $attribute) {
-            if ($attribute instanceof \ReflectionAttribute && ElasticEntity::class === $attribute->getName()) {
-                /** @var ElasticEntity $instance */
-                $instance = $attribute->newInstance();
-
-                return [
-                    'index' => $instance->index,
-                    'shards' => $instance->shards,
-                    'replicas' => $instance->replicas,
-                    'refreshInterval' => $instance->refreshInterval,
-                    'settings' => $instance->settings,
-                ];
-            }
+        if (is_array($metadata['index']) && array_key_exists('index', $metadata['index']) && !empty($metadata['index']['index'])) {
+            return ElasticEntityMetadataDTO::fromArray($metadata['index']);
         }
 
         throw new \RuntimeException($this->translator->trans('manager.no-elastic-entity-attribute-for-class', ['className' => $className], 'zhortein_elastic_entity-manager'));
@@ -284,6 +276,7 @@ class ElasticEntityManager
      *
      * @throws \InvalidArgumentException if the entity does not have a valid ID
      * @throws \ReflectionException
+     * @throws InvalidArgumentException
      */
     public function persist(object $entity): void
     {
@@ -295,7 +288,7 @@ class ElasticEntityManager
 
         $className = $entity::class;
         $indexConfig = $this->getIndexConfiguration($className);
-        $index = $indexConfig['index'];
+        $index = $indexConfig->index;
 
         $id = $entity->getId();
         if (!$id) {
@@ -342,7 +335,7 @@ class ElasticEntityManager
 
         $className = $entity::class;
         $indexConfig = $this->getIndexConfiguration($className);
-        $index = $indexConfig['index'];
+        $index = $indexConfig->index;
 
         $id = $entity->getId();
         if (!$id) {
@@ -378,7 +371,7 @@ class ElasticEntityManager
                 // Add update operation to pending operations
                 $className = $entity::class;
                 $indexConfig = $this->getIndexConfiguration($className);
-                $index = $indexConfig['index'];
+                $index = $indexConfig->index;
                 $this->pendingOperations[] = [
                     'entity' => $entity,
                     'update' => [
@@ -452,7 +445,7 @@ class ElasticEntityManager
     public function find(string $className, string $id): ?object
     {
         $indexConfig = $this->getIndexConfiguration($className);
-        $index = $indexConfig['index'];
+        $index = $indexConfig->index;
 
         /** @var array<string, mixed> $response */
         $response = $this->client->get([
@@ -496,11 +489,13 @@ class ElasticEntityManager
      * @param int|null              $offset    number of entities to skip
      *
      * @return array<object> list of matching entities
+     *
+     * @throws \ReflectionException
      */
     public function findBy(string $className, array $criteria, array $orderBy = [], ?int $limit = null, ?int $offset = null): array
     {
         $indexConfig = $this->getIndexConfiguration($className);
-        $index = $indexConfig['index'];
+        $index = $indexConfig->index;
         $fieldConfigs = $this->getFieldConfigurations($className);
 
         $query = ['bool' => ['must' => []]];
@@ -575,11 +570,13 @@ class ElasticEntityManager
      * @param array<string, mixed> $criteria     optional search criteria to filter the aggregation
      *
      * @return array<mixed, mixed> aggregation results
+     *
+     * @throws \ReflectionException
      */
     public function aggregate(string $className, array $aggregations, array $criteria = []): array
     {
         $indexConfig = $this->getIndexConfiguration($className);
-        $index = $indexConfig['index'];
+        $index = $indexConfig->index;
         $fieldConfigs = $this->getFieldConfigurations($className);
 
         $query = ['bool' => ['must' => []]];
@@ -730,7 +727,7 @@ class ElasticEntityManager
     {
         if ($className) {
             $indexConfig = $this->getIndexConfiguration($className);
-            $index = $indexConfig['index'];
+            $index = $indexConfig->index;
         } else {
             $index = $options['index'] ?? throw new \InvalidArgumentException($this->translator->trans('manager.custom-query.index-cannot-be-null', [], 'zhortein_elastic_entity-manager'));
         }

@@ -45,6 +45,13 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
             ->with(DummyEntity::class)
             ->willReturn([
                 'class' => DummyEntity::class,
+                'index' => [
+                    'index' => 'dummy_index',
+                    'shards' => 1,
+                    'replicas' => 1,
+                    'refreshInterval' => '1s',
+                    ['setting' => 'value'],
+                ],
                 'attributes' => [$this->createElasticEntityAttributeMock('dummy_index')],
             ]);
     }
@@ -136,6 +143,13 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
             ->with(DummyEntityWithoutFields::class)
             ->willReturn([
                 'class' => DummyEntityWithoutFields::class,
+                'index' => [
+                    'index' => 'dummy_index',
+                    'shards' => 1,
+                    'replicas' => 1,
+                    'refreshInterval' => '1s',
+                    ['setting' => 'value'],
+                ],
                 'attributes' => [
                     $this->createElasticEntityAttributeMock('dummy_index'),
                 ],
@@ -167,6 +181,13 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
             ->with(Order::class)
             ->willReturn([
                 'class' => Order::class,
+                'index' => [
+                    'index' => 'dummy_index',
+                    'shards' => 1,
+                    'replicas' => 1,
+                    'refreshInterval' => '1s',
+                    ['setting' => 'value'],
+                ],
                 'attributes' => [
                     $this->createElasticEntityAttributeMock('orders'),
                 ],
@@ -209,6 +230,13 @@ class ElasticEntityManagerPersistRemoveFlushTest extends TestCase
             ->with(Order::class)
             ->willReturn([
                 'class' => Order::class,
+                'index' => [
+                    'index' => 'dummy_index',
+                    'shards' => 1,
+                    'replicas' => 1,
+                    'refreshInterval' => '1s',
+                    ['setting' => 'value'],
+                ],
                 'attributes' => [
                     $this->createElasticEntityAttributeMock('orders'),
                 ],
